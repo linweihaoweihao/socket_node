@@ -31,7 +31,7 @@ server.listen(port);
 server.on('error', onError);
 server.on('listening', onListening);
 
-require('../routes/socket')(server)
+require('../controllers/socket')(server)
 
 //io.on('connection', function(socket){
 //    console.log('connection...')
