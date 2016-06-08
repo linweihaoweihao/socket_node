@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title>socket Test</title>
+    <script src="http://127.0.0.1:8080/socket.io/socket.io.js"></script>
+
+    <style type="text/css">
+        #input {
+            width: 200px;
+        }
+
+        #messages {
+            position: fixed;
+            top: 40px;
+            bottom: 8px;
+            left: 8px;
+            right: 8px;
+            border: 1px solid #eeeeee;
+            padding: 8px;
+        }
+    </style>
+</head>
+<body>
+you message:
+<input type="text" id="input2">
+
+join room:
+<input type="text" id="input">
+
+<div id="messages"></div>
+<script type="text/javascript">
+    var socket = io.connect('http://127.0.0.1:8080/chat');
+    //        socket.emit('my event', 'HELLO')
+    var messagesElement = document.getElementById('messages')
+    var lastMessageElement = null
+
+    function addMessage(message) {
+        var newMessageElement = document.createElement('div')
+        var newMessageText = document.createTextNode(message)
+
+        newMessageElement.appendChild(newMessageText)
+        messagesElement.insertBefore(newMessageElement, lastMessageElement)
+        lastMessageElement = newMessageElement
+    }
+
+    socket.on('new Message', function (content) {
+        addMessage(JSON.stringify(content))
+    })
+
+    socket.on('login', function () {
+        var username = prompt('what is your name?')
+        socket.emit('login', username)
+    })
+
+    var inputElement = document.getElementById('input')
+
+    inputElement.onkeydown = function (keyboardEvent) {
+        if (keyboardEvent.keyCode === 13) {
+            socket.emit('join', inputElement.value)
+
+            inputElement.value = ''
+            return false
+        } else {
+            return true
+        }
+    }
+    var inputElement2 = document.getElementById('input2')
+    inputElement2.onkeydown = function (keyboardEvent) {
+        if (keyboardEvent.keyCode === 13) {
+            socket.emit('new Message', inputElement2.value)
+            inputElement.value = ''
+            return false
+        } else {
+            return true
+        }
+    }
+</script>
+</body>
+</html>

@@ -1,13 +1,19 @@
 /**
  * Created by linweihao on 16/5/31.
  */
+var Socket = require('./socket')
 module.exports = function(router){
-    router.get("/", function(req, res, next){
+    router.get("/d", function(req, res, next){
+        Socket.ddd()
+        res.send("hello")
+    })
+    router.get("/s", function(req, res, next){
+        req.session.iii = "tt"
         res.send("hello")
     })
     var account = require('./account.js')
-    router.post('/register', account.register)
-    router.post('/login', account.login)
+    router.get('/register', account.register)
+    router.get('/login', account.login)
     router.post('/appLogin', account.registerAndLogin)
 
     function isLogin (req, res, next){

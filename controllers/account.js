@@ -9,11 +9,11 @@ var Promise = require('bluebird'),
     config = require('../config.js').Config
 
 exports.register = function (req, res, next) {
-    var name = req.body.name
-        , password = md5(req.body.password)
+    var name = req.query.name
+        , password = req.query.password
 
     Promise.resolve().then(function () {
-        if(!name){
+        if (!name) {
             return Promise.reject({code: 400, message: '用户名为空！'})
         }
         return User.QfindOne({name: name})
@@ -34,13 +34,13 @@ exports.register = function (req, res, next) {
 }
 
 exports.login = function (req, res, next) {
-    var name = req.body.name
-        , password = md5(req.body.password)
+    var name = req.query.name
+        , password = req.query.password
         , options = {}
         , userId
 
     Promise.resolve().then(function () {
-        if(!name){
+        if (!name) {
             return Promise.reject({code: 400, message: '用户名为空！'})
         }
         return User.QfindOne({name: name})
@@ -56,6 +56,9 @@ exports.login = function (req, res, next) {
         userId = user._id.toString()
         req.session.userId = userId
         req.session.islogin = true
+        return User.QfindFriends(user.friends)
+    }).then(function (friends) {
+        options.user.friends = friends
         return res.send({err: false, code: 200, message: options})
     }).catch(function (err) {
         console.trace(err)
@@ -64,25 +67,25 @@ exports.login = function (req, res, next) {
 }
 
 exports.registerAndLogin = function (req, res, next) {
-    var name = req.body.name
-        , password = md5(req.body.password)
-        , nick = req.body.nick
-        , sex = req.body.sex
-        , avatar = req.body.avatar
-        , platformName = req.body.platforName
-        , platformId = req.body.platformId
+    var name = req.query.name
+        , password = md5(req.query.password)
+        , nick = req.query.nick
+        , sex = req.query.sex
+        , avatar = req.query.avatar
+        , platformName = req.query.platforName
+        , platformId = req.query.platformId
         , options = {}
         , userId
 
-    if(sex === "男"){
+    if (sex === "男") {
         sex = 0
     }
-    if(sex === "女"){
+    if (sex === "女") {
         sex = 1
     }
 
     Promise.resolve().then(function () {
-        if(!name){
+        if (!name) {
             return Promise.reject({code: 400, message: '用户名为空！'})
         }
         return User.QfindOne({name: name})
@@ -96,7 +99,10 @@ exports.registerAndLogin = function (req, res, next) {
                 userId = user._id.toString()
                 req.session.userId = userId
                 req.session.islogin = true
-                return true
+                return User.QfindFriends(user.friends)
+                    .then(function (friends) {
+                        user.friends = friends
+                    })
             } else {
                 return Promise.reject({code: 400, message: '密码错误！'})
             }
@@ -130,9 +136,64 @@ exports.islogin = function (req, res, next) {
     }
 }
 
-exports.showUser = function(req, res){
-   return User.Qfind()
-        .then(function(dcos){
-            res.send({dos:JSON.stringify(dcos)})
+exports.getFriends = function (req, res, next) {
+    var id = req.query.id
+    if(!req.session.userId){
+        res.send({err: true, code: 404, message: "未登录"})
+    }
+    return User.QfindOne({_id: id}, {friends: 1})
+        .then(function (doc) {
+            return User.QfindFriends(doc.friends)
+        }).then(function (friends) {
+            res.send({err: false, code: 200, message: friends})
         })
+}
+
+exports.addFriend = function (req, res, next) {
+    var id = req.query.id
+        , friend_id = req.query.f_id
+    if (id && friend_id) {
+        return User.QaddFriend(id, friend_id)
+            .then(function () {
+                res.send({err: false, code: 200, message: "success"})
+            })
+    } else {
+        res.send({err: true, message: "fail", code: 400})
+    }
+}
+
+exports.deleteFriend = function (req, res, next) {
+    var id = req.query.id
+        , friend_id = req.query.f_id
+    if (id && friend_id) {
+        return User.QdeleFriend(id, friend_id)
+            .then(function () {
+                res.send({err: false, code: 200, message: "success"})
+            })
+    } else {
+        res.send({err: true, message: "fail", code: 400})
+    }
+}
+
+exports.initFriend = function () {
+
+}
+
+exports.showUser = function (req, res) {
+    return User.Qfind()
+        .then(function (dcos) {
+            res.send({dos: JSON.stringify(dcos)})
+        })
+}
+
+exports.logout = function (req, res) {
+    req.session.destroy(function (err) {
+        if(err){
+            console.trace(err)
+            res.send({err: true, message: "fail", code: 400})
+        }else{
+            res.send({err: false, code: 200, message: "success"})
+        }
+
+    })
 }
